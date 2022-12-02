@@ -1,0 +1,253 @@
+interface:
+  description: 'Uses the Zeo++ software package to calculate geometric properties of nanoporous materials.'
+  inputSpec:
+    namingScheme: 'MaterialSource/MaterialName'
+    inputExtractionMethod:
+      hookGetInputIds:
+        source:
+          path: 'input/cif_files.dat'
+  propertiesSpec:
+  - name: 'D_is'
+    description: '"Diameter of largest included sphere", expressed in Å (Angstrom)'
+    propertyExtractionMethod:
+      hookGetProperties:
+        source:
+          keyOutput: 'geometricalProperties'
+  - name: 'D_fs'
+    description: '"Diameter of largest free sphere", expressed in Å (Angstrom)'
+    propertyExtractionMethod:
+      hookGetProperties:
+        source:
+          keyOutput: 'geometricalProperties'
+  - name: 'D_isfs'
+    description: '"Diameter of largest included sphere along free path", expressed in Å (Angstrom)'
+    propertyExtractionMethod:
+      hookGetProperties:
+        source:
+          keyOutput: 'geometricalProperties'
+  - name: 'ASA_m^2/cm^3'
+    description: '"Accessible surface area (volumetric)", expressed in m^2/cm^3'
+    propertyExtractionMethod:
+      hookGetProperties:
+        source:
+          keyOutput: 'geometricalProperties'
+  - name: 'ASA_m^2/g'
+    description: '"Accessible surface area (gravimetric)", expressed in m^2/g'
+    propertyExtractionMethod:
+      hookGetProperties:
+        source:
+          keyOutput: 'geometricalProperties'
+  - name: 'NASA_m^2/cm^3'
+    description: '"Non-accessible surface area (volumetric)", expressed in m^2/cm^3'
+    propertyExtractionMethod:
+      hookGetProperties:
+        source:
+          keyOutput: 'geometricalProperties'
+  - name: 'NASA_m^2/g'
+    description: '"Non-accessible surface area (gravimetric)", expressed in m^2/g'
+    propertyExtractionMethod:
+      hookGetProperties:
+        source:
+          keyOutput: 'geometricalProperties'
+  - name: 'Unitcell_volume'
+    description: '"Unit cell volume", expressed in Å^3 (Angstrom^3)'
+    propertyExtractionMethod:
+      hookGetProperties:
+        source:
+          keyOutput: 'geometricalProperties'
+  - name: 'Density'
+    description: '"Crystal density", expressed as g/cm^3'
+    propertyExtractionMethod:
+      hookGetProperties:
+        source:
+          keyOutput: 'geometricalProperties'
+  - name: 'AV_Volume_fraction'
+    description: '"Accessible volume fraction", expressed as a fraction [0,1]'
+    propertyExtractionMethod:
+      hookGetProperties:
+        source:
+          keyOutput: 'geometricalProperties'
+  - name: 'AV_cm^3/g'
+    description: '"Accessible volume (gravimetric)", expressed in cm^3/g'
+    propertyExtractionMethod:
+      hookGetProperties:
+        source:
+          keyOutput: 'geometricalProperties'
+  - name: 'NAV_Volume_fraction'
+    description: '"Non-accessible volume fraction", expressed as a fraction [0,1]'
+    propertyExtractionMethod:
+      hookGetProperties:
+        source:
+          keyOutput: 'geometricalProperties'
+  - name: 'NAV_cm^3/g'
+    description: '"Non-accessible volume (gravimetric)", expressed in cm^3/g'
+    propertyExtractionMethod:
+      hookGetProperties:
+        source:
+          keyOutput: 'geometricalProperties'
+  - name: 'n_pockets'
+    description: '"Number of non-accessible pockets", expressed as an integer.'
+    propertyExtractionMethod:
+      hookGetProperties:
+        source:
+          keyOutput: 'geometricalProperties'
+
+variables:
+  default:
+    global:
+      numberOfNanopores: 3
+      probeRadius_A: 1.4
+      zeo_memory: '2Gi'
+
+blueprint:
+  openshift:
+    global:
+      resourceManager:
+        config:
+          walltime: 14400.0
+          backend: kubernetes
+
+environments:
+  default:
+    geometry:
+      DEFAULTS: INGRESS
+      PATH: /geometry/bin:/opt/conda/bin/:$PATH
+      INGRESS_SUBDOMAIN: ${INGRESS}
+    raspa:
+      PATH: /raspa/bin:$PATH
+
+application-dependencies:
+  default:
+    - nanopore-database
+
+components:
+
+  - stage: 0
+    name: GetNanoporeSource
+    command:
+      arguments: sed -n "$((%(replica)s+1)),+0p" input/cif_files.dat:ref | awk -F "/" '{print $1}'
+      interpreter: bash
+    references:
+      - input/cif_files.dat:ref
+    resourceManager:
+      config:
+        backend: local
+    workflowAttributes:
+      replicate: '%(numberOfNanopores)s'
+
+  - stage: 0
+    name: GetNanoporeName
+    command:
+      arguments: sed -n "$((%(replica)s+1)),+0p" input/cif_files.dat:ref | awk -F "/" '{print $2}'
+      interpreter: bash
+    references:
+      - input/cif_files.dat:ref
+    resourceManager:
+      config:
+        backend: local
+    workflowAttributes:
+      replicate: '%(numberOfNanopores)s'
+
+  - stage: 0
+    name: AsymmetricUnitCell
+    command:
+      environment: raspa
+      executable: create_supercell.sh
+      arguments: -f nanopore-database:ref -n stage0.GetNanoporeName:output -s stage0.GetNanoporeSource:output -u 1,1,1 -o .
+    references:
+      - nanopore-database:ref
+      - stage0.GetNanoporeName:output
+      - stage0.GetNanoporeSource:output
+    resourceManager:
+      kubernetes:
+        image: quay.io/st4sd/community-applications/raspa-source-mdlab:latest
+        cpuUnitsPerCore: 0.25
+    resourceRequest:
+      memory: 512Mi
+    workflowAttributes:
+      shutdownOn:
+      - Killed
+      - KnownIssue
+
+  - stage: 1
+    name: Zeo
+    command:
+      environment: geometry
+      executable: zeo.sh
+      arguments: -n stage0.GetNanoporeName:output_P1 -p '%(probeRadius_A)s' -o .
+    references:
+      - stage0.GetNanoporeName:output
+      - stage0.AsymmetricUnitCell/cif.tgz:copy
+    resourceManager:
+      kubernetes:
+        image: quay.io/st4sd/community-applications/geometry-mdlab:latest
+        cpuUnitsPerCore: 1.0
+    resourceRequest:
+      memory: '%(zeo_memory)s'
+    workflowAttributes:
+      shutdownOn:
+      - Killed
+      - KnownIssue
+
+  - stage: 1
+    name: GeoAmalgamate
+    command:
+      environment: geometry
+      executable: geo_amalgamate.py
+      arguments: .
+    references:
+      - stage1.Zeo/Zeo.sa:copy
+      - stage1.Zeo/Zeo.res:copy
+      - stage1.Zeo/Zeo.vol:copy
+    resourceManager:
+      kubernetes:
+        image: quay.io/st4sd/community-applications/geometry-mdlab:latest
+        cpuUnitsPerCore: 0.25
+    resourceRequest:
+      memory: 256Mi
+
+  - stage: 1
+    name: WriteGeometryToDatabase
+    command:
+      environment: geometry
+      executable: write_geometry_to_database.py
+      arguments: --FrameworkName stage0.GetNanoporeName:output --FrameworkSource stage0.GetNanoporeSource:output .
+    references:
+      - stage0.GetNanoporeName:output
+      - stage0.GetNanoporeSource:output
+      - stage1.GeoAmalgamate/geometricProperties.json:copy
+    resourceManager:
+      kubernetes:
+        image: quay.io/st4sd/community-applications/geometry-mdlab:latest
+        cpuUnitsPerCore: 0.25
+    resourceRequest:
+      memory: 256Mi
+
+  - stage: 2
+    name: AggregateGeometry
+    command:
+      environment: geometry
+      executable: aggregate_geometry_output.py
+      arguments: --FrameworkName stage0.GetNanoporeName:output  --OutputFolders stage1.GeoAmalgamate:ref
+    references:
+      - stage0.GetNanoporeName:output
+      - stage1.GeoAmalgamate:ref
+    resourceManager:
+      kubernetes:
+        image: quay.io/st4sd/community-applications/geometry-mdlab:latest
+        cpuUnitsPerCore: 0.25
+    resourceRequest:
+      memory: 256Mi
+    workflowAttributes:
+      aggregate: true
+
+output:
+  geometricalProperties:
+    data-in: "AggregateGeometry/geometry.tgz:copy"
+    stages:
+      - 2
+
+platforms:
+  - openshift
+
+version: 1.0.0
