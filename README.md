@@ -12,7 +12,7 @@ Automated virtual experiment that calculates geometric properties of nanoporous 
 
 ## Launching the virtual experiment
 
-First you need to import the virtual experiment in your ST4SD registry [from the global ST4SD registry](https://pages.github.com/st4sd/overview/using-the-virtual-experiments-registry-ui). You will then be able to start the parameterised package `nanopore-geometry-experiment` in your private ST4SD registry (see [example notebook](nanopore-geometry-experiment.ipynb)).
+First you need to import the virtual experiment in your ST4SD registry [from the global ST4SD registry](https://st4sd.github.io/overview/using-the-virtual-experiments-registry-ui). You will then be able to start the parameterised package `nanopore-geometry-experiment` in your private ST4SD registry (see [example notebook](nanopore-geometry-experiment.ipynb)).
 
 ## Using custom database of CIF files
 
