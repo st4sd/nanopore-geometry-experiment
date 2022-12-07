@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 # © Copyright IBM Corp. 2022 All Rights Reserved
+# SPDX-License-Identifier: Apache2.0
 
 # Parse input parameters
 while getopts p:o:n: flag
