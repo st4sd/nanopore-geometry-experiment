@@ -32,6 +32,8 @@ rest_uid = api.api_experiment_start("nanopore-geometry-experiment", payload)
 
 **Note**: The [example notebook](nanopore-geometry-experiment.ipynb) shows a full example.
 
+**Note**: You can also run a small scale experiment using docker/podman. See our example [here](docker-example/README.md).
+
 ## Help and Support
 
 Please feel free to create an issue and alert the maintainers listed in the [MAINTAINERS.md](MAINTAINERS.md) page.

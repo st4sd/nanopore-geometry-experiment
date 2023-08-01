@@ -98,6 +98,9 @@ variables:
       numberOfNanopores: 3
       probeRadius_A: 1.4
       zeo_memory: '2Gi'
+  docker:
+    global:
+      numberOfNanopores: 1
 
 blueprint:
   openshift:
@@ -106,6 +109,11 @@ blueprint:
         config:
           walltime: 14400.0
           backend: kubernetes
+  docker:
+    global:
+      resourceManager:
+        config:
+          backend: docker
 
 environments:
   default:
@@ -162,6 +170,8 @@ components:
       kubernetes:
         image: quay.io/st4sd/community-applications/raspa-source-mdlab:latest
         cpuUnitsPerCore: 0.25
+      docker:
+        image: quay.io/st4sd/community-applications/raspa-source-mdlab:latest
     resourceRequest:
       memory: 512Mi
     workflowAttributes:
@@ -181,7 +191,8 @@ components:
     resourceManager:
       kubernetes:
         image: quay.io/st4sd/community-applications/geometry-mdlab:latest
-        cpuUnitsPerCore: 1.0
+      docker:
+        image: quay.io/st4sd/community-applications/geometry-mdlab:latest
     resourceRequest:
       memory: '%(zeo_memory)s'
     workflowAttributes:
@@ -203,6 +214,8 @@ components:
       kubernetes:
         image: quay.io/st4sd/community-applications/geometry-mdlab:latest
         cpuUnitsPerCore: 0.25
+      docker:
+        image: quay.io/st4sd/community-applications/geometry-mdlab:latest
     resourceRequest:
       memory: 256Mi
 
@@ -220,6 +233,8 @@ components:
       kubernetes:
         image: quay.io/st4sd/community-applications/geometry-mdlab:latest
         cpuUnitsPerCore: 0.25
+      docker:
+        image: quay.io/st4sd/community-applications/geometry-mdlab:latest
     resourceRequest:
       memory: 256Mi
 
@@ -236,6 +251,8 @@ components:
       kubernetes:
         image: quay.io/st4sd/community-applications/geometry-mdlab:latest
         cpuUnitsPerCore: 0.25
+      docker:
+        image: quay.io/st4sd/community-applications/geometry-mdlab:latest
     resourceRequest:
       memory: 256Mi
     workflowAttributes:
@@ -249,5 +266,6 @@ output:
 
 platforms:
   - openshift
+  - docker
 
 version: 1.0.0
