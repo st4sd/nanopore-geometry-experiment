@@ -12,11 +12,47 @@ Automated virtual experiment that calculates geometric properties of nanoporous 
 
 ## Launching the virtual experiment
 
-First you need to import the virtual experiment in your ST4SD registry [from the global ST4SD registry](https://st4sd.github.io/overview/using-the-virtual-experiments-registry-ui). You will then be able to start the parameterised package `nanopore-geometry-experiment` in your private ST4SD registry (see [example notebook](nanopore-geometry-experiment.ipynb)).
+### On a local machine
+
+## Instructions
+
+If you have a container runtime such as docker, podman, rancher desktop, etc available on your system you can execute the experiment by:
+
+1. creating a python virtual environment, activating it, and installing the python module `st4sd-runtime-core[develop]`
+2. cloning this repository
+3. launching the experiment
+
+For example:
+
+```bash
+#!/usr/bin/env sh
+
+: # Download virtual experiment
+git clone https://github.com/st4sd/nanopore-geometry-experiment.git
+
+: # Setup ST4SD runtime-core
+python3 -m venv --copies venv
+. venv/bin/activate
+python3 -m pip install "st4sd-runtime-core[develop]"
+
+: # Run experiment
+elaunch.py -i docker-example/cif_files.dat \
+      --applicationDependencySource="nanopore-database=cif:copy" \
+      nanopore-geometry-experiment.package
+```
+
+**Note**: Make sure you run the `git clone` command in a directory that your container runtime (e.g.`docker`, `podman`, etc) can mount later when you execute the experiment.
+
+**Note**: Using a container runtime is intended for small scale experiments and/or debugging your experiments. Use the `kubernetes` example below to launch larger experiments.
+
+### On Kubernetes
+
+Follow our end to end [example notebook](nanopore-geometry-experiment.ipynb) to launch our `nanopore-geometry-experiment` experiment on your ST4SD Cloud instance.
+
 
 ## Using custom database of CIF files
 
-You may download the CIF files of your choosing to a PVC inside your OpenShift cluster (below we use the name `nanopore-database-pvc`), mount it as a volume and ask the virtual experiment instance to use the contents of the PVC as the contents of the `nanopore-database` application-dependency. You will also need to remove the line related to `nanopore-database` from the `manifest.yaml` to enable the use of the PVC.
+You may download the CIF files of your choosing to a PVC inside your OpenShift cluster (below we use the name `nanopore-database-pvc`), mount it as a volume and ask the virtual experiment instance to use the contents of the PVC as the contents of the `nanopore-database` application-dependency.
 
 ```Python
 file_names = [""]
@@ -31,8 +67,6 @@ rest_uid = api.api_experiment_start("nanopore-geometry-experiment", payload)
 ```
 
 **Note**: The [example notebook](nanopore-geometry-experiment.ipynb) shows a full example.
-
-**Note**: You can also run a small scale experiment using docker/podman. See our example [here](docker-example/README.md).
 
 ## Help and Support
 
