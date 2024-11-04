@@ -18,7 +18,7 @@ Automated virtual experiment that calculates geometric properties of nanoporous 
 
 If you have a container runtime such as docker, podman, rancher desktop, etc available on your system you can execute the experiment by:
 
-1. creating a python virtual environment, activating it, and installing the python module `st4sd-runtime-core[develop]`
+1. creating a python virtual environment, activating it, and installing the python module `st4sd-runtime-core[develop]>=2.2.0`
 2. cloning this repository
 3. launching the experiment
 
@@ -33,9 +33,13 @@ git clone https://github.com/st4sd/nanopore-geometry-experiment.git
 : # Setup ST4SD runtime-core
 python3 -m venv --copies venv
 . venv/bin/activate
-python3 -m pip install "st4sd-runtime-core[develop]"
+python3 -m pip install "st4sd-runtime-core[develop]>=2.2.0"
 
-: # Run experiment
+: # Go inside the directory of this repository. 
+: # The next command executes the experiment in there
+cd nanopore-geometry-experiment
+
+: # Run the experiment
 elaunch.py -i docker-example/cif_files.dat \
       --applicationDependencySource="nanopore-database=cif:copy" \
       nanopore-geometry-experiment.package
